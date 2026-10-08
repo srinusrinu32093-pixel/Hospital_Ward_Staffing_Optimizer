@@ -1,0 +1,927 @@
+# ============================================================
+# HOSPITAL WARD STAFFING OPTIMIZER
+# GOOGLE COLAB -> index.html
+# ============================================================
+
+html = r'''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Hospital Ward Staffing Optimizer</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fb;
+    color: #1f2937;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+header {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: white;
+    padding: 30px;
+    border-radius: 18px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    font-size: 30px;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 16px;
+    opacity: 0.95;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.card h2 {
+    margin-bottom: 18px;
+    color: #1d4ed8;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #d1d5db;
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+button {
+    border: none;
+    padding: 12px 22px;
+    border-radius: 9px;
+    font-size: 15px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.calculate {
+    background: #2563eb;
+    color: white;
+}
+
+.reset {
+    background: #64748b;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.result-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.result {
+    background: #eff6ff;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.result h3 {
+    color: #1d4ed8;
+    margin-bottom: 8px;
+}
+
+.result p {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.total {
+    background: #ecfdf5;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.total h2 {
+    color: #047857;
+}
+
+#costResult {
+    font-size: 28px;
+    font-weight: bold;
+    color: #047857;
+    margin-top: 8px;
+}
+
+.message {
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+    display: none;
+}
+
+.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+canvas {
+    width: 100%;
+    max-height: 350px;
+    margin-top: 20px;
+}
+
+@media(max-width:700px) {
+    .result-box {
+        grid-template-columns: 1fr;
+    }
+
+    table {
+        font-size: 13px;
+    }
+
+    header h1 {
+        font-size: 23px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <h1>🏥 Hospital Ward Staffing Optimizer</h1>
+    <p>Linear Equations + Gaussian Elimination</p>
+</header>
+
+
+<!-- STAFF COSTS -->
+
+<div class="card">
+
+<h2>1. Staff Cost</h2>
+
+<table>
+
+<tr>
+    <th>Staff Type</th>
+    <th>Cost per Hour (₹)</th>
+</tr>
+
+<tr>
+    <td>Senior Nurse</td>
+    <td>
+        <input id="seniorCost" type="number" value="800">
+    </td>
+</tr>
+
+<tr>
+    <td>Junior Nurse</td>
+    <td>
+        <input id="juniorCost" type="number" value="400">
+    </td>
+</tr>
+
+<tr>
+    <td>Assistant</td>
+    <td>
+        <input id="assistantCost" type="number" value="200">
+    </td>
+</tr>
+
+</table>
+
+</div>
+
+
+<!-- MATRIX -->
+
+<div class="card">
+
+<h2>2. Staffing Matrix AX = B</h2>
+
+<p>
+Enter the staff-hour contribution matrix and required hours.
+</p>
+
+<table>
+
+<tr>
+    <th>Ward</th>
+    <th>Senior</th>
+    <th>Junior</th>
+    <th>Assistant</th>
+    <th>Required Hours</th>
+</tr>
+
+<tr>
+    <td>Ward A</td>
+
+    <td>
+        <input id="a11" type="number" value="1">
+    </td>
+
+    <td>
+        <input id="a12" type="number" value="2">
+    </td>
+
+    <td>
+        <input id="a13" type="number" value="3">
+    </td>
+
+    <td>
+        <input id="b1" type="number" value="20">
+    </td>
+</tr>
+
+<tr>
+    <td>Ward B</td>
+
+    <td>
+        <input id="a21" type="number" value="2">
+    </td>
+
+    <td>
+        <input id="a22" type="number" value="3">
+    </td>
+
+    <td>
+        <input id="a23" type="number" value="1">
+    </td>
+
+    <td>
+        <input id="b2" type="number" value="25">
+    </td>
+</tr>
+
+<tr>
+    <td>Ward C</td>
+
+    <td>
+        <input id="a31" type="number" value="1">
+    </td>
+
+    <td>
+        <input id="a32" type="number" value="1">
+    </td>
+
+    <td>
+        <input id="a33" type="number" value="2">
+    </td>
+
+    <td>
+        <input id="b3" type="number" value="15">
+    </td>
+</tr>
+
+</table>
+
+<br>
+
+<button class="calculate" onclick="calculateStaffing()">
+    Calculate Staffing
+</button>
+
+<button class="reset" onclick="resetForm()">
+    Reset
+</button>
+
+<div id="message" class="message"></div>
+
+</div>
+
+
+<!-- RESULTS -->
+
+<div class="card">
+
+<h2>3. Staffing Solution</h2>
+
+<div class="result-box">
+
+<div class="result">
+    <h3>Senior Nurses</h3>
+    <p id="seniorResult">-</p>
+</div>
+
+<div class="result">
+    <h3>Junior Nurses</h3>
+    <p id="juniorResult">-</p>
+</div>
+
+<div class="result">
+    <h3>Assistants</h3>
+    <p id="assistantResult">-</p>
+</div>
+
+</div>
+
+
+<div class="total">
+
+<h2>Total Staffing Cost</h2>
+
+<div id="costResult">
+    ₹0.00
+</div>
+
+</div>
+
+</div>
+
+
+<!-- VERIFICATION -->
+
+<div class="card">
+
+<h2>4. AX = B Verification</h2>
+
+<table>
+
+<tr>
+    <th>Ward</th>
+    <th>Calculated Hours</th>
+    <th>Required Hours</th>
+</tr>
+
+<tr>
+    <td>Ward A</td>
+    <td id="verify1">-</td>
+    <td id="required1">-</td>
+</tr>
+
+<tr>
+    <td>Ward B</td>
+    <td id="verify2">-</td>
+    <td id="required2">-</td>
+</tr>
+
+<tr>
+    <td>Ward C</td>
+    <td id="verify3">-</td>
+    <td id="required3">-</td>
+</tr>
+
+</table>
+
+</div>
+
+
+<!-- SENSITIVITY -->
+
+<div class="card">
+
+<h2>5. Senior Nurse Cost Sensitivity Analysis</h2>
+
+<p>
+The staffing solution remains unchanged when only the cost changes.
+This analysis shows how the total cost changes.
+</p>
+
+<canvas id="chart" width="900" height="350"></canvas>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   GAUSSIAN ELIMINATION
+   ============================================================ */
+
+function gaussianElimination(A, B) {
+
+    let n = B.length;
+
+    let M = [];
+
+    for(let i = 0; i < n; i++) {
+
+        M[i] = [];
+
+        for(let j = 0; j < n; j++) {
+            M[i][j] = Number(A[i][j]);
+        }
+
+        M[i][n] = Number(B[i]);
+    }
+
+
+    // Forward elimination
+
+    for(let i = 0; i < n; i++) {
+
+        let maxRow = i;
+
+        for(let k = i + 1; k < n; k++) {
+
+            if(Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) {
+                maxRow = k;
+            }
+
+        }
+
+
+        // Swap rows
+
+        let temp = M[i];
+        M[i] = M[maxRow];
+        M[maxRow] = temp;
+
+
+        if(Math.abs(M[i][i]) < 0.0000001) {
+            throw new Error("Matrix has no unique solution.");
+        }
+
+
+        // Eliminate
+
+        for(let k = i + 1; k < n; k++) {
+
+            let factor = M[k][i] / M[i][i];
+
+            for(let j = i; j <= n; j++) {
+
+                M[k][j] =
+                    M[k][j] -
+                    factor * M[i][j];
+
+            }
+
+        }
+
+    }
+
+
+    // Back substitution
+
+    let X = new Array(n).fill(0);
+
+    for(let i = n - 1; i >= 0; i--) {
+
+        let sum = M[i][n];
+
+        for(let j = i + 1; j < n; j++) {
+
+            sum -= M[i][j] * X[j];
+
+        }
+
+        X[i] = sum / M[i][i];
+
+    }
+
+    return X;
+}
+
+
+/* ============================================================
+   CALCULATE STAFFING
+   ============================================================ */
+
+function calculateStaffing() {
+
+    try {
+
+        let A = [
+
+            [
+                Number(document.getElementById("a11").value),
+                Number(document.getElementById("a12").value),
+                Number(document.getElementById("a13").value)
+            ],
+
+            [
+                Number(document.getElementById("a21").value),
+                Number(document.getElementById("a22").value),
+                Number(document.getElementById("a23").value)
+            ],
+
+            [
+                Number(document.getElementById("a31").value),
+                Number(document.getElementById("a32").value),
+                Number(document.getElementById("a33").value)
+            ]
+
+        ];
+
+
+        let B = [
+
+            Number(document.getElementById("b1").value),
+            Number(document.getElementById("b2").value),
+            Number(document.getElementById("b3").value)
+
+        ];
+
+
+        let costs = [
+
+            Number(document.getElementById("seniorCost").value),
+            Number(document.getElementById("juniorCost").value),
+            Number(document.getElementById("assistantCost").value)
+
+        ];
+
+
+        // Solve AX = B
+
+        let solution = gaussianElimination(A, B);
+
+
+        // Display solution
+
+        document.getElementById("seniorResult").innerText =
+            solution[0].toFixed(3);
+
+        document.getElementById("juniorResult").innerText =
+            solution[1].toFixed(3);
+
+        document.getElementById("assistantResult").innerText =
+            solution[2].toFixed(3);
+
+
+        // Total cost
+
+        let totalCost =
+            solution[0] * costs[0] +
+            solution[1] * costs[1] +
+            solution[2] * costs[2];
+
+
+        document.getElementById("costResult").innerText =
+            "₹" + totalCost.toFixed(2);
+
+
+        // Required hours
+
+        document.getElementById("required1").innerText = B[0];
+        document.getElementById("required2").innerText = B[1];
+        document.getElementById("required3").innerText = B[2];
+
+
+        // AX verification
+
+        let resultA = A[0][0] * solution[0]
+                    + A[0][1] * solution[1]
+                    + A[0][2] * solution[2];
+
+        let resultB = A[1][0] * solution[0]
+                    + A[1][1] * solution[1]
+                    + A[1][2] * solution[2];
+
+        let resultC = A[2][0] * solution[0]
+                    + A[2][1] * solution[1]
+                    + A[2][2] * solution[2];
+
+
+        document.getElementById("verify1").innerText =
+            resultA.toFixed(3);
+
+        document.getElementById("verify2").innerText =
+            resultB.toFixed(3);
+
+        document.getElementById("verify3").innerText =
+            resultC.toFixed(3);
+
+
+        // Success message
+
+        let message =
+            document.getElementById("message");
+
+        message.style.display = "block";
+
+        message.className =
+            "message success";
+
+        message.innerText =
+            "✓ Gaussian elimination completed successfully!";
+
+
+        // Sensitivity analysis
+
+        drawSensitivityChart(
+            solution,
+            costs[1],
+            costs[2]
+        );
+
+    }
+
+    catch(error) {
+
+        let message =
+            document.getElementById("message");
+
+        message.style.display = "block";
+
+        message.className =
+            "message error";
+
+        message.innerText =
+            "Error: " + error.message;
+
+    }
+
+}
+
+
+/* ============================================================
+   SENSITIVITY CHART
+   ============================================================ */
+
+function drawSensitivityChart(solution, juniorCost, assistantCost) {
+
+    let canvas =
+        document.getElementById("chart");
+
+    let ctx =
+        canvas.getContext("2d");
+
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    let seniorCosts = [
+        600,650,700,750,800,
+        850,900,950,1000
+    ];
+
+
+    let totals = [];
+
+
+    for(let i = 0; i < seniorCosts.length; i++) {
+
+        let total =
+            solution[0] * seniorCosts[i] +
+            solution[1] * juniorCost +
+            solution[2] * assistantCost;
+
+        totals.push(total);
+
+    }
+
+
+    let margin = 70;
+
+    let chartWidth =
+        canvas.width - 2 * margin;
+
+    let chartHeight =
+        canvas.height - 2 * margin;
+
+
+    let maxValue =
+        Math.max(...totals);
+
+    let minValue =
+        Math.min(...totals);
+
+
+    // Axes
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        margin,
+        margin
+    );
+
+    ctx.lineTo(
+        margin,
+        canvas.height - margin
+    );
+
+    ctx.lineTo(
+        canvas.width - margin,
+        canvas.height - margin
+    );
+
+    ctx.stroke();
+
+
+    // Line graph
+
+    ctx.beginPath();
+
+
+    for(let i = 0; i < totals.length; i++) {
+
+        let x =
+            margin +
+            (i / (totals.length - 1)) *
+            chartWidth;
+
+
+        let y =
+            canvas.height -
+            margin -
+            ((totals[i] - minValue) /
+            (maxValue - minValue || 1)) *
+            chartHeight;
+
+
+        if(i === 0) {
+            ctx.moveTo(x,y);
+        }
+        else {
+            ctx.lineTo(x,y);
+        }
+
+    }
+
+
+    ctx.stroke();
+
+
+    // Labels
+
+    ctx.font = "14px Arial";
+
+    ctx.fillText(
+        "Senior Nurse Cost (₹/hour)",
+        canvas.width / 2 - 80,
+        canvas.height - 20
+    );
+
+
+    ctx.save();
+
+    ctx.translate(20, canvas.height / 2);
+
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.fillText(
+        "Total Staffing Cost (₹)",
+        0,
+        0
+    );
+
+    ctx.restore();
+
+
+    // Data labels
+
+    for(let i = 0; i < totals.length; i++) {
+
+        let x =
+            margin +
+            (i / (totals.length - 1)) *
+            chartWidth;
+
+
+        let y =
+            canvas.height -
+            margin -
+            ((totals[i] - minValue) /
+            (maxValue - minValue || 1)) *
+            chartHeight;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            y,
+            4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+
+        ctx.fillText(
+            "₹" + totals[i].toFixed(0),
+            x - 20,
+            y - 10
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   RESET
+   ============================================================ */
+
+function resetForm() {
+
+    document.getElementById("seniorCost").value = 800;
+    document.getElementById("juniorCost").value = 400;
+    document.getElementById("assistantCost").value = 200;
+
+    document.getElementById("a11").value = 1;
+    document.getElementById("a12").value = 2;
+    document.getElementById("a13").value = 3;
+
+    document.getElementById("a21").value = 2;
+    document.getElementById("a22").value = 3;
+    document.getElementById("a23").value = 1;
+
+    document.getElementById("a31").value = 1;
+    document.getElementById("a32").value = 1;
+    document.getElementById("a33").value = 2;
+
+    document.getElementById("b1").value = 20;
+    document.getElementById("b2").value = 25;
+    document.getElementById("b3").value = 15;
+
+
+    document.getElementById("seniorResult").innerText = "-";
+    document.getElementById("juniorResult").innerText = "-";
+    document.getElementById("assistantResult").innerText = "-";
+
+    document.getElementById("costResult").innerText = "₹0.00";
+
+    document.getElementById("verify1").innerText = "-";
+    document.getElementById("verify2").innerText = "-";
+    document.getElementById("verify3").innerText = "-";
+
+    document.getElementById("required1").innerText = "-";
+    document.getElementById("required2").innerText = "-";
+    document.getElementById("required3").innerText = "-";
+
+    document.getElementById("message").style.display = "none";
+
+    let canvas =
+        document.getElementById("chart");
+
+    canvas.getContext("2d").clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+</script>
+
+</body>
+</html>
+'''
+
+# Create index.html
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html)
+
+print("✅ index.html created successfully!")
+print("📁 File name: index.html")
